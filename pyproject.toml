@@ -1,0 +1,15 @@
+[project]
+name = "text-query"
+version = "0.1.0"
+description = "A FastMCP server"
+requires-python = ">=3.10"
+dependencies = [
+    "fastmcp>=0.2.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = []
