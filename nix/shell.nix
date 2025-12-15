@@ -4,25 +4,15 @@ let
   ctransformers = py.buildPythonPackage rec {
     pname = "ctransformers";
     version = "0.2.27";
-    pyproject = true;
-    src = pkgs.fetchPypi {
-      inherit pname version;
-      sha256 = "sha256-JWU9S+il7U4tN1ZUTB6Ygb+VQEvlNxw+1QaiVsKGY9U=";
+    format = "wheel";
+    src = pkgs.fetchurl {
+      url = "https://files.pythonhosted.org/packages/14/50/0b608e2abee4fc695b4e7ff5f569f5d32faf84a49e322034716fa157d1cf/ctransformers-0.2.27-py3-none-any.whl";
+      sha256 = "sha256-ajukdVZHGFDZX9vFkpmoKrkcnci0AgHF5+gtcTYHctk=";
     };
-    build-system = with py; [
-      scikit-build
-      setuptools
-      wheel
-      ninja
-      cmake
-    ];
     propagatedBuildInputs = with py; [
       huggingface-hub
       py-cpuinfo
     ];
-    dontUseCmakeConfigure = true;
-    dontUseNinjaBuild = true;
-    dontUseNinjaInstall = true;
   };
 in {
   devShells.default = pkgs.mkShell {
