@@ -11,3 +11,6 @@ version = "1.0.0"
 
 [tool.setuptools.packages.find]
 where = ["lib"]
+
+[project.scripts]
+unnamed = "unnamed.agents:serve"

@@ -21,6 +21,9 @@ in {
       langchain-community
       setuptools
       langchain
+      pydantic
+      fastapi
+      uvicorn
       python
       flake8
       wheel
