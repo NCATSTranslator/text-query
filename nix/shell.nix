@@ -31,29 +31,32 @@ let
       mcp
     ];
   };
+  python = pkgs.python313.withPackages (ps: [
+    ps.langchain-community
+    langchain-mcp-adapters
+    ctransformers
+    ps.setuptools
+    ps.langchain
+    ps.pydantic
+    ps.fastmcp
+    ps.fastapi
+    ps.uvicorn
+    ps.flake8
+    ps.typer
+    ps.neo4j
+    ps.wheel
+    ps.pip
+  ]);
 in {
   devShells.default = pkgs.mkShell {
     name = "unnamed (1.0.0) devshell";
     NEO4J_HOME = "./.neo4j";
     NEO4J_CONF= "./.neo4j/conf";
-    packages = (with py; [
-      langchain-community
-      setuptools
-      langchain
-      pydantic
-      fastapi
-      uvicorn
-      python
-      flake8
-      typer
-      neo4j
-      wheel
-      pip
-    ]) ++ (with pkgs; [
+    PYTHON_INTERPRETER = "${python}/bin/python3";
+    packages = (with pkgs; [
       neo4j
     ]) ++ ([
-      langchain-mcp-adapters
-      ctransformers
+      python
     ]);
     shellHook = ''
       neo4j start

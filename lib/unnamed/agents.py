@@ -11,17 +11,19 @@ from unnamed.models import Response
 from unnamed.models import Request
 from unnamed.models import Context
 from fastapi import FastAPI
+from os import environ
+import asyncio
 import uvicorn
 
 MCP_CLIENT: object = MultiServerMCPClient(
-  {"MultiomicsKG Server": {"transport": "stdio", "command": "python3", "args": ["./mcps.py"]}}
+  {"MultiomicsKG Server": {"transport": "stdio", "command": environ.get("PYTHON_INTERPRETER"), "args": ["./mcps.py"]}}
 )
-MCP_TOOLS: object = MCP_CLIENT.get_tools()
+MCP_TOOLS: object = asyncio.run(MCP_CLIENT.get_tools())
 
 SUMMARIZER: object = SummarizationMiddleware(
   model=QUANTIZED_MEDITRON_7B,
-  trigger=("tokens", 1600),
-  keep=("messages", 20)
+  max_tokens_before_summary=1_600,
+  messages_to_keep=5
 )
 
 AGENT: object = create_agent(
@@ -33,7 +35,7 @@ AGENT: object = create_agent(
   ],
   context_schema=Context,
   response_format=ToolStrategy(Response),
-  checkpointer=InMemorySaver
+  checkpointer=InMemorySaver()
 )
 
 APP: FastAPI = FastAPI()
@@ -45,4 +47,4 @@ def invoke(x: Request):
   return result["structured_response"]
 
 def serve(host: str = "0.0.0.0", port: str = "8080") -> None:
-  uvicorn.serve(APP, host=host, port=port)
+  uvicorn.run(APP, host=host, port=port)

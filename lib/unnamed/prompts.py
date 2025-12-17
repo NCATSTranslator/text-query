@@ -16,7 +16,7 @@ BASE_PROMPT: str = """\
 @dynamic_prompt
 def system_with_persona(x: ModelRequest) -> str:
   # ! Same Line Length Comment As Above Applies To The Addenums Here
-  persona: Personas = x.runtime.context.get("persona")
+  persona: Personas = x.runtime.context.persona
   match persona:
     case Personas.RESEARCHER:
       addenum: str = """
