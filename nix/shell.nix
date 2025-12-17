@@ -59,9 +59,12 @@ in {
       python
     ]);
     shellHook = ''
-      neo4j start
-      neo4j stop
-      neo4j start
+      if [ ! -d "./.neo4j/run/" ]; then
+        neo4j start
+        neo4j stop
+      fi
+
+      neo4j start --verbose
       trap "neo4j stop" EXIT INT TERM
     '';
   };
