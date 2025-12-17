@@ -5,3 +5,4 @@
 *.neo4j/.neo4j/
 *.neo4j/run/
 *.ndjson
+*dev/
