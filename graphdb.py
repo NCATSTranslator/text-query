@@ -21,7 +21,7 @@ SET n.name = node.name,
 """
   with nodes.open("rb") as f:
     batch: list[object] = []
-    for idx, line in enumerate(f):
+    for idx, line in enumerate(f, start=1):
       node = orjson.loads(line)
       batch.append(node)
 
@@ -45,7 +45,7 @@ SET r += edge
 """
   with edges.open("rb") as f:
     batch: list[object] = []
-    for idx, line in enumerate(f):
+    for idx, line in enumerate(f, start=1):
       edge = orjson.loads(line)
       batch.append(edge)
 
@@ -69,7 +69,7 @@ def main(
     with DRIVER.session() as session:
       session.run("CREATE INDEX curies IF NOT EXISTS FOR (n:Node) ON (n.id)")
       import_nodes(session, nodes)
-      import_edges(session, nodes)
+      import_edges(session, edges)
   finally:
     DRIVER.close()
     print("Inserts Complete")

@@ -28,6 +28,7 @@ in {
       uvicorn
       python
       flake8
+      typer
       neo4j
       wheel
       pip
