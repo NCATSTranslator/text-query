@@ -12,7 +12,6 @@ QUANTIZED_MEDITRON_7B: CTransformers = CTransformers(
     "top_p": 0.9,
     "repetition_penalty": 1.15,
     "last_n_tokens": 64,
-    "threads": 8,
     "context_length": 2048,
     "batch_size": 8, 
   }

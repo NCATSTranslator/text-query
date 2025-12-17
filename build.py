@@ -32,7 +32,7 @@ SET n.name = node.name,
     if batch:
       session.run(node_insert, batch=batch)
 
-    print(f"Finished Inserting Nodes")
+    print("Finished Inserting Nodes")
 
 def import_edges(session: object, edges: Path, max_batch: int = 1_000) -> None:
   edge_insert: str = r"""\
@@ -56,7 +56,7 @@ SET r += edge
     if batch:
       session.run(edge_insert, batch=batch)
 
-    print(f"Finished Inserting Edges")
+    print("Finished Inserting Edges")
 
 @APP.command()
 def main(
