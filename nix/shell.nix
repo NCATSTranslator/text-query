@@ -17,6 +17,8 @@ let
 in {
   devShells.default = pkgs.mkShell {
     name = "unnamed (1.0.0) devshell";
+    NEO4J_HOME = "./.neo4j";
+    NEO4J_CONF= "./.neo4j/conf";
     packages = (with py; [
       langchain-community
       setuptools
@@ -26,10 +28,17 @@ in {
       uvicorn
       python
       flake8
+      neo4j
       wheel
       pip
+    ]) ++ (with pkgs; [
+      neo4j
     ]) ++ ([
       ctransformers
     ]);
+    shellHook = ''
+      neo4j start
+      trap "neo4j stop" EXIT INT TERM
+    '';
   };
 }
