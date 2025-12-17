@@ -20,8 +20,21 @@ class Request(ConfiguredBase):
 
 class Response(ConfiguredBase):
   """Knowledge Graph Derived Biomedical Hypothesis."""
-  confidence: ConfidenceLevels = Field(ConfidenceLevels.VERY_UNCONFIDENT, description="Analysis Of Confidence In Hypothesis In Response.")
-  content: str = Field(..., description="Textual Response To User.")
+  confidence: ConfidenceLevels = Field(
+    ConfidenceLevels.VERY_UNCONFIDENT,
+    description="Analysis Of Confidence In Hypothesis In Response.",
+    examples=[
+      "very confident",
+      "confident",
+      "somewhat confident",
+      "unconfident",
+      "very unconfident"
+    ]
+  )
+  content: str = Field(
+    ...,
+    description="Textual Response To User.",
+  )
 
 class Context(ConfiguredBase):
   persona: Personas = Field(Personas.GENERAL_PUBLIC)
