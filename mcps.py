@@ -97,8 +97,6 @@ LIMIT 3
           for t in records
         ]
 
-
-
   finally:
     DRIVER.close()
 
