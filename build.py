@@ -7,8 +7,7 @@ import typer
 
 APP: object = typer.Typer(pretty_exceptions_show_locals=False)
 
-# ! Hosting Info Is In The ./.neo4j/conf/neo4j.conf
-# ! Change If The Driver Breaks
+# ! Hosting Info Is In The ./.neo4j/conf/neo4j.conf -- Change If The Driver Breaks
 DRIVER: object = GraphDatabase.driver("bolt://localhost:7687", auth=None)
 
 def import_nodes(session: object, nodes: Path, max_batch: int = 2_000) -> None:
