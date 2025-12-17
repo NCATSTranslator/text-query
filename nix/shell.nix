@@ -39,6 +39,8 @@ in {
     ]);
     shellHook = ''
       neo4j start
+      neo4j stop
+      neo4j start
       trap "neo4j stop" EXIT INT TERM
     '';
   };
