@@ -14,6 +14,23 @@ let
       py-cpuinfo
     ];
   };
+  langchain-mcp-adapters = py.buildPythonPackage rec {
+    pname = "langchain-mcp-adapters";
+    version = "0.2.1";
+    format = "pyproject";
+    src = pkgs.fetchurl {
+      url = "https://files.pythonhosted.org/packages/d9/52/cebf0ef5b1acef6cbc63d671171d43af70f12d19f55577909c7afa79fb6e/langchain_mcp_adapters-0.2.1.tar.gz";
+      sha256 = "sha256-WOZMROjfKcp+s7ZWz4yZMe9kOGU018omGYLjvcY/MXY=";
+    };
+    nativeBuildInputs = with py; [
+      pdm-backend
+    ];
+    propagatedBuildInputs = with py; [
+      typing-extensions
+      langchain-core
+      mcp
+    ];
+  };
 in {
   devShells.default = pkgs.mkShell {
     name = "unnamed (1.0.0) devshell";
@@ -35,6 +52,7 @@ in {
     ]) ++ (with pkgs; [
       neo4j
     ]) ++ ([
+      langchain-mcp-adapters
       ctransformers
     ]);
     shellHook = ''

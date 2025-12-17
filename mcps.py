@@ -42,3 +42,6 @@ def is_MESH(x: Any) -> str:
         cur.close()
   finally:
     conn.close()
+
+if __name__ == "__main__":
+  MCP.run()
