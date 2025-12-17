@@ -4,3 +4,4 @@
 *venv/
 *.neo4j/.neo4j/
 *.neo4j/run/
+*.ndjson
