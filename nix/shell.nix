@@ -13,6 +13,7 @@ let
       huggingface-hub
       py-cpuinfo
     ];
+    doCheck = false;
   };
   langchain-mcp-adapters = py.buildPythonPackage rec {
     pname = "langchain-mcp-adapters";
@@ -30,42 +31,85 @@ let
       langchain-core
       mcp
     ];
+    doCheck = false;
+  };
+  python-for-mcps = pkgs.python313.withPackages (ps: [
+    ps.fastmcp
+    ps.neo4j
+  ]);
+  unnamed = py.buildPythonApplication rec {
+    pname = "unnamed";
+    version = "0.0.0";
+    format = "pyproject";
+    src = ../.;
+    build-system = with py; [
+      setuptools
+      wheel
+    ];
+    propagatedBuildInputs = (with py; [
+      langchain-community
+      langchain-openai
+      langchain
+      pydantic
+      fastmcp
+      fastapi
+      uvicorn
+      typer
+      neo4j
+    ]) ++ (with pkgs; [
+      neo4j
+    ]) ++ ([
+      langchain-mcp-adapters
+      ctransformers
+    ]);
+    nativeBuildInputs = with pkgs; [
+      makeWrapper
+    ];
+    makeWrapperArgs = [
+      "--set PYTHON_INTERPRETER ${python-for-mcps}/bin/python3"
+    ];
+    doCheck = false;
   };
   python = pkgs.python313.withPackages (ps: [
-    ps.langchain-community
-    langchain-mcp-adapters
-    ctransformers
-    ps.setuptools
-    ps.langchain
-    ps.pydantic
-    ps.fastmcp
-    ps.fastapi
-    ps.uvicorn
     ps.flake8
-    ps.typer
+    ps.orjson
     ps.neo4j
-    ps.wheel
-    ps.pip
   ]);
 in {
   devShells.default = pkgs.mkShell {
     name = "unnamed (1.0.0) devshell";
     NEO4J_HOME = "./.neo4j";
     NEO4J_CONF= "./.neo4j/conf";
-    PYTHON_INTERPRETER = "${python}/bin/python3";
-    packages = (with pkgs; [
-      neo4j
-    ]) ++ ([
+    packages = ([
+      unnamed
       python
+    ]) ++ (with pkgs; [
+      neo4j
+    ]) ++ (with py; [
+      vllm
     ]);
     shellHook = ''
+      python3() {
+        ${python}/bin/python3 "$@"
+      }
+      export -f python3
+
       if [ ! -d "./.neo4j/run/" ]; then
         neo4j start
         neo4j stop
       fi
 
-      neo4j start --verbose
-      trap "neo4j stop" EXIT INT TERM
+      neo4j start
+
+      vllm serve NousResearch/Hermes-2-Pro-Llama-3-8B --port 8000 --host 127.0.0.1 > /dev/null 2>&1 & VLLM_PID=$!
+
+      for i in {1..60}; do
+        if curl -s http://127.0.0.1:8000/health > /dev/null 2>&1; then
+          break
+        fi
+      done
+
+      trap "neo4j stop && kill $VLLM_PID 2>/dev/null" EXIT INT TERM
     '';
   };
 }

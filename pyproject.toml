@@ -9,6 +9,9 @@ build-backend = "setuptools.build_meta"
 name = "unnamed"
 version = "1.0.0"
 
+[tool.setuptools]
+include-package-data = true
+
 [tool.setuptools.packages.find]
 where = ["lib"]
 
