@@ -11,6 +11,7 @@ from langchain.agents import create_agent
 from unnamed.models import Response
 from unnamed.models import Request
 from unnamed.models import Context
+from unnamed.llms import LLAMA_3_1
 from fastapi import FastAPI
 from os import environ
 import asyncio
@@ -28,7 +29,7 @@ SUMMARIZER: object = SummarizationMiddleware(
 )
 
 AGENT: object = create_agent(
-  model=QWEN_CODER_2_5_7B,
+  model=LLAMA_3_1,
   tools=MCP_TOOLS,
   middleware=[
     system_with_persona,

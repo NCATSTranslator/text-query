@@ -109,6 +109,7 @@ in {
       done
 
       ollama pull qwen2.5-coder:7b
+      ollama pull llama3.1
 
       trap "neo4j stop && kill $OLLAMA_PID 2>/dev/null" EXIT INT TERM
     '';
