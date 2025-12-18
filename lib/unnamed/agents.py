@@ -4,22 +4,24 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain.agents.structured_output import ToolStrategy
 from langchain.agents.middleware import TodoListMiddleware
 from langgraph.checkpoint.memory import InMemorySaver
+from unnamed.subagents import ask_medical_subagent
 from unnamed.prompts import system_with_persona
 from langchain.messages import HumanMessage
 from langchain.agents import create_agent
 from unnamed.models import Response
-from unnamed.llms import COGITO_8B
+from unnamed.llms import COGITO_14B
 from unnamed.models import Request
 from unnamed.models import Context
 from fastapi import FastAPI
 from os import environ
-import asyncio
+import asyncio # ! Leave asyncio Import For Async Defs
 import uvicorn
 
 PYTHON: str = environ.get("PYTHON_INTERPRETER")
 
 MCP_CLIENT: object = MultiServerMCPClient({
   "MultiomicsKG": {"transport": "stdio", "command": PYTHON, "args": ["./.mcps/mokg.py"]},
+  "NameResolver": {"transport": "stdio", "command": PYTHON, "args": ["./.mcps/resolver.py"]},
   "MeSH": {"transport": "stdio", "command": PYTHON, "args": ["./.mcps/mesh.py"]},
   # "MicrobiomeKG": {"transport": "stdio", "command": PYTHON, "args": ["./.mcps/mbkg.py"]}
 })
@@ -35,7 +37,7 @@ async def startup() -> None:
 
 @APP.post("/", response_model=Response)
 async def invoke(x: Request) -> Response:
-  tools: object = await get_mcps()
+  mcp_tools: object = await get_mcps()
 
   call_limit: object = ModelCallLimitMiddleware(
     run_limit=10,
@@ -45,8 +47,11 @@ async def invoke(x: Request) -> Response:
   todo_list: object = TodoListMiddleware()
 
   agent: object = create_agent(
-    model=COGITO_8B,
-    tools=tools,
+    model=COGITO_14B,
+    tools=[
+      mcp_tools,
+      ask_medical_subagent
+    ],
     middleware=[
       system_with_persona,
       call_limit,
@@ -66,8 +71,8 @@ async def invoke(x: Request) -> Response:
   )
 
   print(r)
-  content: object = r["messages"][-1]
-  return Response(content=content.content)
+  content: object = r["messages"][-1].content
+  return Response(content=content)
 
 def serve(host: str = "127.0.0.1", port: str = "8080") -> None:
   uvicorn.run(APP, host=host, port=port)

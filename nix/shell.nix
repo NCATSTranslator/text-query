@@ -1,6 +1,20 @@
 {pkgs, lib, config, ...}:
 let
   py = pkgs.python313Packages;
+  ctransformers = py.buildPythonPackage rec {
+    pname = "ctransformers";
+    version = "0.2.27";
+    format = "wheel";
+    src = pkgs.fetchurl {
+      url = "https://files.pythonhosted.org/packages/14/50/0b608e2abee4fc695b4e7ff5f569f5d32faf84a49e322034716fa157d1cf/ctransformers-0.2.27-py3-none-any.whl";
+      sha256 = "sha256-ajukdVZHGFDZX9vFkpmoKrkcnci0AgHF5+gtcTYHctk=";
+    };
+    propagatedBuildInputs = with py; [
+      huggingface-hub
+      py-cpuinfo
+    ];
+    doCheck = false;
+  };
   langchain-mcp-adapters = py.buildPythonPackage rec {
     pname = "langchain-mcp-adapters";
     version = "0.2.1";
@@ -20,6 +34,7 @@ let
     doCheck = false;
   };
   python-for-mcps = pkgs.python313.withPackages (ps: [
+    ps.requests
     ps.fastmcp
     ps.httpx
     ps.neo4j
@@ -36,6 +51,7 @@ let
     propagatedBuildInputs = (with py; [
       langchain-community
       langchain-ollama
+      ctransformers
       langchain
       pydantic
       fastmcp
@@ -44,6 +60,7 @@ let
       typer
       neo4j
     ]) ++ (with pkgs; [
+      stdenv.cc.cc.lib
       neo4j
     ]) ++ ([
       langchain-mcp-adapters
@@ -53,6 +70,7 @@ let
     ];
     makeWrapperArgs = [
       "--set PYTHON_INTERPRETER ${python-for-mcps}/bin/python3"
+      "--prefix LD_LIBRARY_PATH : ${pkgs.stdenv.cc.cc.lib}/lib"
     ];
     doCheck = false;
   };
@@ -95,7 +113,7 @@ in {
         sleep 1
       done
 
-      ollama pull cogito:8b
+      ollama pull cogito:14b
 
       trap "neo4j stop && kill $OLLAMA_PID 2>/dev/null" EXIT INT TERM
     '';

@@ -27,7 +27,7 @@ Requirements:
 - State confidence level based on evidence quality: high (strong direct paths), medium (indirect connections or weaker evidence), low (limited data but plausible connections)
 - Low confidence does NOT mean you should stop - provide the best hypothesis possible with available data
 - Always respond in the strict JSON response format provided as a tool
-- Tool calls must use JSON function calling syntax only - XML syntax is strictly prohibited
+- Tool calls must use Langchain ToolCall() function calling syntax only - XML and JSON syntax is strictly prohibited
 """
 
 @dynamic_prompt
