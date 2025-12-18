@@ -6,3 +6,5 @@
 *.neo4j/logs/
 *.neo4j/run/
 *.ndjson
+*.ollama/blobs/
+*.ollama/manifests/

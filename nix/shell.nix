@@ -1,20 +1,6 @@
 {pkgs, lib, config, ...}:
 let
   py = pkgs.python313Packages;
-  ctransformers = py.buildPythonPackage rec {
-    pname = "ctransformers";
-    version = "0.2.27";
-    format = "wheel";
-    src = pkgs.fetchurl {
-      url = "https://files.pythonhosted.org/packages/14/50/0b608e2abee4fc695b4e7ff5f569f5d32faf84a49e322034716fa157d1cf/ctransformers-0.2.27-py3-none-any.whl";
-      sha256 = "sha256-ajukdVZHGFDZX9vFkpmoKrkcnci0AgHF5+gtcTYHctk=";
-    };
-    propagatedBuildInputs = with py; [
-      huggingface-hub
-      py-cpuinfo
-    ];
-    doCheck = false;
-  };
   langchain-mcp-adapters = py.buildPythonPackage rec {
     pname = "langchain-mcp-adapters";
     version = "0.2.1";
@@ -35,6 +21,7 @@ let
   };
   python-for-mcps = pkgs.python313.withPackages (ps: [
     ps.fastmcp
+    ps.httpx
     ps.neo4j
   ]);
   unnamed = py.buildPythonApplication rec {
@@ -60,7 +47,6 @@ let
       neo4j
     ]) ++ ([
       langchain-mcp-adapters
-      ctransformers
     ]);
     nativeBuildInputs = with pkgs; [
       makeWrapper
@@ -79,8 +65,8 @@ in {
   devShells.default = pkgs.mkShell {
     name = "unnamed (1.0.0) devshell";
     NEO4J_HOME = "./.neo4j";
-    NEO4J_CONF= "./.neo4j/conf";
-    OLLAMA_HOME= "./.ollama";
+    NEO4J_CONF = "./.neo4j/conf";
+    OLLAMA_MODELS = "./.ollama";
     packages = ([
       unnamed
       python
