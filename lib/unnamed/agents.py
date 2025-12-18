@@ -44,8 +44,10 @@ APP: FastAPI = FastAPI()
 @APP.post("/", response_model=Response)
 def invoke(x: Request):
   inputs: dict[str, list[HumanMessage]] = {"messages": [HumanMessage(x.content)]}
-  result: object = AGENT.invoke(inputs, {"configurable": {"thread_id": "1"}}, context=Context(persona=x.persona))
-  return result["structured_response"]
+  r: object = AGENT.invoke(inputs, {"configurable": {"thread_id": "1"}}, context=Context(persona=x.persona))
+  print(r)
+  content: object = r["messages"][-1]
+  return Response(content=content.content)
 
 def serve(host: str = "127.0.0.1", port: str = "8080") -> None:
   uvicorn.run(APP, host=host, port=port)
