@@ -48,7 +48,7 @@ let
     ];
     propagatedBuildInputs = (with py; [
       langchain-community
-      langchain-openai
+      langchain-ollama
       langchain
       pydantic
       fastmcp
@@ -85,8 +85,7 @@ in {
       python
     ]) ++ (with pkgs; [
       neo4j
-    ]) ++ (with py; [
-      vllm
+      ollama
     ]);
     shellHook = ''
       python3() {
@@ -101,15 +100,17 @@ in {
 
       neo4j start
 
-      vllm serve NousResearch/Hermes-2-Pro-Llama-3-8B --port 8000 --host 127.0.0.1 > /dev/null 2>&1 & VLLM_PID=$!
-
-      for i in {1..60}; do
-        if curl -s http://127.0.0.1:8000/health > /dev/null 2>&1; then
+      ollama serve > /dev/null 2>&1 & OLLAMA_PID=$!
+      for i in {1..30}; do
+        if curl -s http://127.0.0.1:11434/api/tags > /dev/null 2>&1; then
           break
         fi
+        sleep 1
       done
 
-      trap "neo4j stop && kill $VLLM_PID 2>/dev/null" EXIT INT TERM
+      ollama pull qwen2.5-coder:7b
+
+      trap "neo4j stop && kill $OLLAMA_PID 2>/dev/null" EXIT INT TERM
     '';
   };
 }

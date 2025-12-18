@@ -1,13 +1,17 @@
 from __future__ import annotations
 from langchain_community.llms import CTransformers
-from langchain_openai import ChatOpenAI
+from langchain_ollama import ChatOllama
 
-HERMES_2_PRO_LLAMA_3_8B: ChatOpenAI = ChatOpenAI(
-  model="NousResearch/Hermes-2-Pro-Llama-3-8B",
-  openai_api_key="EMPTY",
-  openai_api_base="http://localhost:8000/v1",
-  max_tokens=5,
+QWEN_CODER_2_5_7B: ChatOllama = ChatOllama(
+  model="qwen2.5-coder:7b",
   temperature=0.3,
+  num_ctx=2048,
+  num_predict=512,
+  top_k=40,
+  top_p=0.9,
+  repeat_penalty=1.15,
+  repeat_last_n=64,
+  num_batch=8,
 )
 
 QUANTIZED_MEDITRON_7B: CTransformers = CTransformers(
