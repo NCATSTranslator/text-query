@@ -1,13 +1,14 @@
 from __future__ import annotations
-from langchain.agents.middleware import SummarizationMiddleware
+from langchain.agents.middleware import ModelCallLimitMiddleware
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain.agents.structured_output import ToolStrategy
+from langchain.agents.middleware import TodoListMiddleware
 from langgraph.checkpoint.memory import InMemorySaver
 from unnamed.prompts import system_with_persona
 from langchain.messages import HumanMessage
-from unnamed.llms import QWEN_3_CODER_30B
 from langchain.agents import create_agent
 from unnamed.models import Response
+from unnamed.llms import COGITO_8B
 from unnamed.models import Request
 from unnamed.models import Context
 from fastapi import FastAPI
@@ -17,11 +18,11 @@ import uvicorn
 
 PYTHON: str = environ.get("PYTHON_INTERPRETER")
 
-MCP_CLIENT: object = MultiServerMCPClient(
-  {"MultiomicsKG": {"transport": "stdio", "command": PYTHON, "args": ["./.mcps/mokg.py"]}},
-  {"MeSH": {"transport": "stdio", "command": PYTHON, "args": ["./.mcps/mesh.py"]}},
-  {"MicrobiomeKG": {"transport": "stdio", "command": PYTHON, "args": ["./.mcps/mbkg.py"]}}
-)
+MCP_CLIENT: object = MultiServerMCPClient({
+  "MultiomicsKG": {"transport": "stdio", "command": PYTHON, "args": ["./.mcps/mokg.py"]},
+  "MeSH": {"transport": "stdio", "command": PYTHON, "args": ["./.mcps/mesh.py"]},
+  # "MicrobiomeKG": {"transport": "stdio", "command": PYTHON, "args": ["./.mcps/mbkg.py"]}
+})
 
 async def get_mcps() -> object:
   return await MCP_CLIENT.get_tools()
@@ -36,18 +37,20 @@ async def startup() -> None:
 async def invoke(x: Request) -> Response:
   tools: object = await get_mcps()
 
-  summarizer: object = SummarizationMiddleware(
-    model=QWEN_3_CODER_30B,
-    max_tokens_before_summary=4086,
-    messages_to_keep=5
+  call_limit: object = ModelCallLimitMiddleware(
+    run_limit=10,
+    exit_behavior="end"
   )
 
+  todo_list: object = TodoListMiddleware()
+
   agent: object = create_agent(
-    model=QWEN_3_CODER_30B,
+    model=COGITO_8B,
     tools=tools,
     middleware=[
       system_with_persona,
-      summarizer
+      call_limit,
+      todo_list
     ],
     context_schema=Context,
     response_format=ToolStrategy(Response),

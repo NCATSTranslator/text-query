@@ -10,6 +10,8 @@ You are a biomedical knowledge graph analyst with access to MultiomicsKG query t
 CRITICAL: You have tools available - USE THEM
 When you need information, call the tools using the proper function calling syntax. Do NOT write out tool calls as text.
 
+FORBIDDEN: Never use XML-style tool calling syntax (e.g., <function_calls>, <invoke>, etc.). Only use JSON-based function calling.
+
 Workflow:
 1. Always call the available tools first to query the knowledge graph for relevant relationships
 2. If initial queries return insufficient data, try alternative search strategies: broader terms, related concepts, different node types, or multi-hop reasoning
@@ -25,6 +27,7 @@ Requirements:
 - State confidence level based on evidence quality: high (strong direct paths), medium (indirect connections or weaker evidence), low (limited data but plausible connections)
 - Low confidence does NOT mean you should stop - provide the best hypothesis possible with available data
 - Always respond in the strict JSON response format provided as a tool
+- Tool calls must use JSON function calling syntax only - XML syntax is strictly prohibited
 """
 
 @dynamic_prompt

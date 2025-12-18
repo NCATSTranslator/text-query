@@ -95,7 +95,7 @@ in {
         sleep 1
       done
 
-      ollama pull qwen3-coder:30b
+      ollama pull cogito:8b
 
       trap "neo4j stop && kill $OLLAMA_PID 2>/dev/null" EXIT INT TERM
     '';

@@ -33,17 +33,16 @@ MESH: Path = Path("./.sqlite3/mesh.sqlite3")
 def MESH_means(x: Any) -> str:
   """
   Look up the meaning and definition of a MeSH code.
-  
+
   Args:
     x: MeSH code (str) - can be formatted as "D000001" or "MESH:D000001"
-    
+
   Returns:
     JSON string containing MeSH descriptor information including term name, definition, and metadata
-    
+
   Note:
     Use this to interpret MeSH codes found in MultiomicsKG edge annotations
   """
-  print("CALLED | 3")
   try:
     code: str = str(x)
     code = code.replace("MESH:", "") if "MESH:" in code else code
@@ -65,17 +64,16 @@ def MESH_means(x: Any) -> str:
 def is_MESH(x: Any) -> str:
   """
   Search for a MeSH code by medical term or concept name.
-  
+
   Args:
     x: Medical term or concept name (str) - exact match required
-    
+
   Returns:
     JSON string containing matching MeSH descriptor with code, term, and metadata
-    
+
   Note:
     Use this to find the MeSH code for a specific medical concept when you know the term name
   """
-  print("CALLED | 4")
   try:
     thing: str = str(x)
 
