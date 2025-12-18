@@ -1,7 +1,7 @@
 *.vscode/
 *__pycache__/
 *.egg-info/
-*venv/
+*?/
 *.neo4j/data/
 *.neo4j/logs/
 *.neo4j/run/

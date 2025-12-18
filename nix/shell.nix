@@ -80,6 +80,7 @@ in {
     name = "unnamed (1.0.0) devshell";
     NEO4J_HOME = "./.neo4j";
     NEO4J_CONF= "./.neo4j/conf";
+    OLLAMA_HOME= "./.ollama";
     packages = ([
       unnamed
       python
@@ -108,8 +109,7 @@ in {
         sleep 1
       done
 
-      ollama pull qwen2.5-coder:7b
-      ollama pull llama3.1
+      ollama pull qwen3-coder:30b
 
       trap "neo4j stop && kill $OLLAMA_PID 2>/dev/null" EXIT INT TERM
     '';

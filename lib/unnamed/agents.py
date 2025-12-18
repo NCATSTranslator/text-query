@@ -4,14 +4,13 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain.agents.structured_output import ToolStrategy
 from langgraph.checkpoint.memory import InMemorySaver
 from unnamed.prompts import system_with_persona
-from unnamed.llms import QUANTIZED_MEDITRON_7B
+# from unnamed.llms import QUANTIZED_MEDITRON_7B
 from langchain.messages import HumanMessage
-from unnamed.llms import QWEN_CODER_2_5_7B
+from unnamed.llms import QWEN_3_CODER_30B
 from langchain.agents import create_agent
 from unnamed.models import Response
 from unnamed.models import Request
 from unnamed.models import Context
-from unnamed.llms import LLAMA_3_1
 from fastapi import FastAPI
 from os import environ
 import asyncio
@@ -23,13 +22,13 @@ MCP_CLIENT: object = MultiServerMCPClient(
 MCP_TOOLS: object = asyncio.run(MCP_CLIENT.get_tools())
 
 SUMMARIZER: object = SummarizationMiddleware(
-  model=QUANTIZED_MEDITRON_7B,
+  model=QWEN_3_CODER_30B,
   max_tokens_before_summary=1_600,
   messages_to_keep=5
 )
 
 AGENT: object = create_agent(
-  model=LLAMA_3_1,
+  model=QWEN_3_CODER_30B,
   tools=MCP_TOOLS,
   middleware=[
     system_with_persona,
