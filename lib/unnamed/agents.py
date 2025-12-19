@@ -1,5 +1,7 @@
 from __future__ import annotations
 from langchain.agents.middleware import ModelCallLimitMiddleware
+from langchain.agents.middleware import SummarizationMiddleware
+from langchain.agents.middleware import ToolCallLimitMiddleware
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain.agents.structured_output import ToolStrategy
 from langchain.agents.middleware import TodoListMiddleware
@@ -14,7 +16,7 @@ from unnamed.models import Request
 from unnamed.models import Context
 from fastapi import FastAPI
 from os import environ
-import asyncio # ! Leave asyncio Import For Async Defs
+import asyncio
 import uvicorn
 
 PYTHON: str = environ.get("PYTHON_INTERPRETER")
@@ -23,24 +25,34 @@ MCP_CLIENT: object = MultiServerMCPClient({
   "MultiomicsKG": {"transport": "stdio", "command": PYTHON, "args": ["./.mcps/mokg.py"]},
   "NameResolver": {"transport": "stdio", "command": PYTHON, "args": ["./.mcps/resolver.py"]},
   "MeSH": {"transport": "stdio", "command": PYTHON, "args": ["./.mcps/mesh.py"]},
-  # "MicrobiomeKG": {"transport": "stdio", "command": PYTHON, "args": ["./.mcps/mbkg.py"]}
+  "MicrobiomeKG": {"transport": "stdio", "command": PYTHON, "args": ["./.mcps/mbkg.py"]}
 })
+
+AGENT: object = None
 
 async def get_mcps() -> object:
   return await MCP_CLIENT.get_tools()
 
-APP: FastAPI = FastAPI()
-
-@APP.on_event("startup")
-async def startup() -> None:
-  await get_mcps()
-
-@APP.post("/", response_model=Response)
-async def invoke(x: Request) -> Response:
+async def create_medical_agent() -> object:
   mcp_tools: object = await get_mcps()
 
+  summarizer: object = SummarizationMiddleware(
+    model=COGITO_14B,
+    max_tokens_before_summary=16_000,
+    messages_to_keep=5
+  )
+
+  tool_limits: list[object] = [
+    ToolCallLimitMiddleware(tool_name="is_NODE", run_limit=3),
+    ToolCallLimitMiddleware(tool_name="NODE_path", run_limit=3),
+    ToolCallLimitMiddleware(tool_name="lookup", run_limit=2),
+    ToolCallLimitMiddleware(tool_name="bulk_lookup", run_limit=2),
+    ToolCallLimitMiddleware(tool_name="lookup_with_context", run_limit=2),
+    ToolCallLimitMiddleware(tool_name="is_MESH", run_limit=1),
+  ]
+
   call_limit: object = ModelCallLimitMiddleware(
-    run_limit=10,
+    run_limit=5,
     exit_behavior="end"
   )
 
@@ -49,11 +61,13 @@ async def invoke(x: Request) -> Response:
   agent: object = create_agent(
     model=COGITO_14B,
     tools=[
-      mcp_tools,
+      *mcp_tools,
       ask_medical_subagent
     ],
     middleware=[
       system_with_persona,
+      *tool_limits,
+      summarizer,
       call_limit,
       todo_list
     ],
@@ -63,8 +77,20 @@ async def invoke(x: Request) -> Response:
     debug=True
   )
 
+  return agent
+
+APP: FastAPI = FastAPI()
+
+@APP.on_event("startup")
+async def startup() -> None:
+  global AGENT
+  AGENT = await create_medical_agent()
+
+@APP.post("/", response_model=Response)
+async def invoke(x: Request) -> Response:
   inputs: dict[str, list[HumanMessage]] = {"messages": [HumanMessage(x.content)]}
-  r: object = await agent.ainvoke(
+
+  r: object = await AGENT.ainvoke(
     inputs,
     {"configurable": {"thread_id": "1"}},
     context=Context(persona=x.persona)

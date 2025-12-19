@@ -10,14 +10,13 @@ MEDICAL_SUBAGENT: object = create_agent(
   debug=True
 )
 
-# ! Do Not Change This To "tool" Or "tools" Because MCPs Call Those Variables Internally
 @tool()
 async def ask_medical_subagent(x: str) -> str:
   """
-  Query a specialized medical AI assistant for terminology, concepts, and biomedical knowledge.
+  Query a specialized medical AI assistant for terminology, knowledge graph interpretation, and biomedical knowledge.
 
   Args:
-    x: Natural language question about medical/biological topics
+    x: Natural language question about medical/biological topics or knowledge graph results
 
   Returns:
     JSON string containing the medical assistant's response
@@ -28,24 +27,35 @@ async def ask_medical_subagent(x: str) -> str:
     - Clarify proper database terminology formatting (e.g., "How is ADHD written in MONDO?")
     - Explain biological entities (e.g., "What is Bifidobacterium?")
     - Disambiguate medical concepts when searches fail
+    - Interpret knowledge graph results (e.g., "Explain these disease-gene associations")
+    - Summarize complex biomedical relationships (e.g., "What do these pathways tell us about this condition?")
+    - Contextualize graph query outputs (e.g., "What's the clinical significance of these findings?")
 
   Workflow:
     1. When is_NODE returns empty results, use this tool to expand abbreviations or find alternative names
     2. Ask for database-specific formatting (MONDO, UMLS, NCBITaxon conventions)
     3. Request multiple name variations to try in subsequent searches
+    4. After obtaining knowledge graph results, use this tool to interpret, summarize, and explain findings
+    5. Request clinical context or mechanistic explanations for graph relationships
 
   Examples:
+    Terminology:
     - "What is the full medical name for ADHD?"
     - "What are alternative names for attention deficit hyperactivity disorder?"
     - "How is type 2 diabetes formally written in medical databases?"
-    - "What does COPD stand for?"
-    - "Explain what Bifidobacterium is"
+    
+    Interpretation:
+    - "Explain what these gene-disease associations mean: [results]"
+    - "Summarize the clinical relevance of these protein interactions: [results]"
+    - "What do these microbiome-disease relationships suggest about pathogenesis?"
+    - "Interpret these pathway enrichment results in the context of inflammation"
 
   Note:
-    Always consult this tool before concluding a medical entity doesn't exist in the knowledge graph.
-    The assistant provides accurate terminology aligned with biomedical ontologies.
+    This tool serves dual purposes: (1) finding entities before querying, and (2) making sense of 
+    query results afterward. Always consult for terminology before concluding an entity doesn't exist,
+    and use it to interpret complex knowledge graph outputs for clinical or biological insights.
   """
   inputs: dict[str, list[HumanMessage]] = {"messages": [HumanMessage(x)]}
-  r: object = MEDICAL_SUBAGENT.invoke(inputs)
+  r: object = await MEDICAL_SUBAGENT.ainvoke(inputs)
   context: object = r["messages"][-1].content
   return json.dumps(context, indent=2)

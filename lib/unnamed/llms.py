@@ -7,7 +7,7 @@ COGITO_14B: ChatOllama = ChatOllama(
   temperature=0.1,
   top_p=0.4,
   top_k=20,
-  num_ctx=32_768,
+  num_ctx=32_000,
   num_predict=2_048,
   repeat_penalty=1.1,
   repeat_last_n=64,      
@@ -18,13 +18,13 @@ QUANTIZED_MEDITRON_7B: CTransformers = CTransformers(
   model_type="llama",
   model_file="meditron-7b.Q4_K_M.gguf",
   config={
-    "max_new_tokens": 1024,
+    "max_new_tokens": 1_000,
     "temperature": 0.3,
     "top_k": 40,
     "top_p": 0.9,
     "repetition_penalty": 1.15,
     "last_n_tokens": 64,
-    "context_length": 2048,
+    "context_length": 2_000,
     "batch_size": 8, 
   }
 )
