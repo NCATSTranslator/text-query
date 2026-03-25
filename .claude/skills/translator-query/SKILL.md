@@ -174,9 +174,93 @@ Dev URL: `https://multiomics.rtx.ai:9990/mbkp/query`
 - ABCC11 = MRP8 (multidrug resistance-associated protein) — a pleiotropic efflux pump gene
 - Custom KPs can be added via `translator_metakg.add_new_API_for_query(APInames, metaKG, name, url, predicate, subject, object)`
 
+## Extracting Edge Provenance
+
+Every result MUST include provenance details. Use `result_parsed` (returned by `parse_KG()`) to extract edge-level evidence:
+
+```python
+# After any Neighborhood_finder or Path_finder call, extract provenance from result_parsed
+# result_parsed is keyed by "subject_object" and contains:
+#   'predicate': list of predicates
+#   'primary_knowledge_source': list of infores IDs (e.g., 'infores:ctd', 'infores:hetionet')
+#   'aggregator_knowledge_source': list of aggregator infores IDs
+#   'evidence': list of evidence strings (subject_predicate_object_source)
+
+# Example: extract provenance for top ranked results
+for idx, row in ranked_df.head(10).iterrows():
+    output_node = row['output_node']
+    node_type = row['type_of_nodes']
+    if node_type == 'object':
+        edge_key = f"{input_curie}_{output_node}"
+    else:
+        edge_key = f"{output_node}_{input_curie}"
+    if edge_key in result_parsed:
+        edge = result_parsed[edge_key]
+        print(f"\n{row['Name']} ({output_node}):")
+        print(f"  Predicates: {list(set(edge['predicate']))}")
+        print(f"  Primary sources: {list(set(edge['primary_knowledge_source']))}")
+        if 'aggregator_knowledge_source' in edge:
+            print(f"  Aggregators: {list(set(edge['aggregator_knowledge_source']))}")
+```
+
+For **direct TRAPI queries** (Strategy 5), extract richer attributes from raw edges:
+
+```python
+for edge_id, edge in result.get('knowledge_graph', {}).get('edges', {}).items():
+    pred = edge.get('predicate', '')
+    sources = []
+    for s in edge.get('sources', []):
+        if s['resource_role'] == 'primary_knowledge_source':
+            sources.append(s['resource_id'])
+    publications = []
+    p_values = []
+    supporting_text = []
+    for attr in edge.get('attributes', []):
+        atype = attr.get('attribute_type_id', '')
+        aname = attr.get('original_attribute_name', '')
+        aval = attr.get('value')
+        if 'publications' in atype or aname == 'publications':
+            if isinstance(aval, list):
+                publications.extend(aval)
+            else:
+                publications.append(aval)
+        elif 'p_value' in atype or 'p_value' in aname:
+            p_values.append(aval)
+        elif 'supporting_text' in atype:
+            supporting_text.append(aval)
+    print(f"  Predicate: {pred}")
+    print(f"  Sources: {sources}")
+    if publications: print(f"  Publications: {publications}")
+    if p_values: print(f"  P-values: {p_values}")
+    if supporting_text: print(f"  Supporting text: {supporting_text[:2]}")
+```
+
+## Provenance Transparency Policy
+
+**Separate Translator evidence from LLM-supplied context.** The user needs to know exactly what came from the knowledge graph and what you are adding from your own training knowledge.
+
+### Structure your response in clearly labeled sections:
+
+1. **"From Translator"** — Report exactly what the queries returned: edges, predicates, sources, scores, publications, p-values. Every claim here must cite the primary knowledge source (infores ID) and predicate. If a query returned no results, say so plainly.
+
+2. **"Additional biological context (LLM knowledge)"** — You ARE encouraged to provide biological interpretation, mechanistic reasoning, and relevant literature context. But this section must be clearly labeled as coming from your training data, not from Translator. Example:
+   > *From my training knowledge (not from Translator):* ABCC11 loss-of-function variants (e.g., rs17822931) are known to alter apocrine gland secretions, which could plausibly change the nutrient environment for skin-resident microbes like Corynebacterium and Staphylococcus species.
+
+3. **"Knowledge gaps in Translator"** — This is critical. When you bridge from Translator results to biological conclusions using your own knowledge, explicitly identify each inferential leap as a gap. Frame these as specific edge types or data that Translator could incorporate. Example:
+   > **Gap:** Translator has no direct edge from ABCC11 → skin microbiome composition. The path requires bridging through chemical intermediates. Potential knowledge to add:
+   > - ABCC11 variant → apocrine secretion composition (phenotype edge, could come from GWAS/ClinVar)
+   > - Apocrine secretion composition → skin microbe abundance (could come from Microbiome KP if skin metagenomics studies are ingested)
+
+### Rules:
+- Never present LLM-supplied biology as if it came from a Translator query
+- Always attribute Translator claims to their specific source (infores ID + predicate)
+- Frame every inferential leap between Translator edges as an identifiable gap with a suggested edge type and potential data source
+- The gaps section is actionable feedback for Translator developers — be specific about what category of knowledge (KP, dataset, edge type) would close each gap
+
 ## Presenting Results
 
 - Show the top results in a clean table or list
+- For each edge/path, include: predicate, primary knowledge source(s), and any available publications or p-values
 - Explain what the predicates mean in plain language (e.g., `biolink:correlated_with` = "statistically correlated with")
 - Highlight the most-supported results (highest `Num_of_primary_infores` or `score`)
 - Note which knowledge providers contributed the results
