@@ -151,14 +151,33 @@ parsed = TCT.parse_KG(result_filtered)
 
 Use when the user specifically asks about microbiome associations with p-values, publications, or other detailed evidence. Queries the Microbiome KP directly for richer edge attributes.
 
+**Important:** Use `translator_query.query_KP()` (which accepts a dict) — NOT the dead-code `trapi.build_query` / `trapi.query` functions. Build the query dict with `TCT.format_query_json()`.
+
 ```python
-from TCT.trapi import build_query, query
+from TCT import translator_query
+
 node = name_resolver.lookup("NAFLD")
-q = build_query([node.curie], ['biolink:OrganismTaxon'],
-                ['biolink:associated_with', 'biolink:correlated_with'])
-result = query("https://multiomics.transltr.io/mbkp/query", q)
+predicates = ['biolink:associated_with', 'biolink:correlated_with']
+query_json = TCT.format_query_json(
+    [node.curie], [],
+    node.types[:3],  # subject categories from the resolved node
+    ['biolink:OrganismTaxon'],
+    predicates)
+
+# Query the Microbiome KP directly
+# First, register it if not already in APInames
+from TCT import translator_metakg
+translator_metakg.add_new_API_for_query(
+    APInames, metaKG, 'Microbiome KP',
+    'https://multiomics.transltr.io/mbkp/query',
+    predicates,
+    node.types[:3],
+    ['biolink:OrganismTaxon'])
+
+result = translator_query.query_KP(
+    'Microbiome KP', query_json, APInames, API_predicates)
 if result:
-    for edge_id, edge in result.get('knowledge_graph', {}).get('edges', {}).items():
+    for edge_id, edge in result.get('edges', {}).items():
         print(edge.get('predicate'), edge.get('attributes', []))
 ```
 
