@@ -1,50 +1,45 @@
-# text-query
+# Getting Started with text-query
 
-A FastMCP server.
-
-## Setup
-
-Install dependencies using uv:
+## 1. Clone the repo
 
 ```bash
-uv sync
+git clone https://github.com/TranslatorSRI/text-query.git
+cd text-query
 ```
 
-## Development
-
-Run the server in development mode:
+## 2. Copy the environment template
 
 ```bash
-uv run src/server.py
+cp .env-example .env
 ```
 
-## Usage
+## 3. Download your GCP service account key
 
-Add to your Claude Desktop configuration file at `~/Library/Application Support/Claude/claude_desktop_config.json`:
+1. Get a key from Sierra Moxon. 
 
-```json
-{
-  "mcpServers": {
-    "microbiome-query": {
-      "command": "/Users/YOUR_USERNAME/.local/bin/uv",
-      "args": [
-        "--directory",
-        "/path/to/text-query",
-        "run",
-        "src/server.py"
-      ]
-    }
-  }
-}
-```
-
-Replace:
-- `YOUR_USERNAME` with your actual username
-- `/path/to/text-query` with the full path to this repository
-
-Find the full path to `uv` with:
 ```bash
-which uv
+mv ~/Downloads/translator-microbiome-*.json ~/.config/gcloud/translator-microbiome-key.json
 ```
 
-After updating the config, restart Claude Desktop.
+## 4. Update `.env` with your key path and project ID
+
+Open `.env` and replace the placeholder values:
+
+```bash
+export CLAUDE_CODE_USE_VERTEX=1
+export CLOUD_ML_REGION=us-east5
+export ANTHROPIC_VERTEX_PROJECT_ID=translator-microbiome
+export GOOGLE_CLOUD_PROJECT=translator-microbiome
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/your/translator-microbiome-key.json
+```
+
+Replace `/path/to/your/translator-microbiome-key.json` with the actual path from step 3. For example:
+
+## 5. Source the environment and run Claude Code
+
+```bash
+source .env
+claude
+```
+
+Claude Code will now use Vertex AI with the `translator-microbiome` project.
