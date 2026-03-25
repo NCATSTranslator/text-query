@@ -9,6 +9,7 @@ dependencies = [
     "google-cloud-aiplatform>=1.38.0",
     "python-dotenv>=1.0.0",
     "anthropic>=0.76.0",
+    "tct",
 ]
 
 [build-system]
@@ -17,6 +18,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
+
+[tool.uv.sources]
+tct = { git = "https://github.com/NCATSTranslator/Translator_component_toolkit" }
 
 [dependency-groups]
 dev = []
