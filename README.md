@@ -5,7 +5,7 @@
 You can use other agents, but this recipe uses Claude Code.
 
 1. Follow instructions here (just step 1): https://code.claude.com/docs/en/quickstart
-2. If you have your own Anthropic account (encouraged) follow the login instructions in step 2 and 3 and skip to step 6 in this recipe. 
+2. If you have your own Anthropic account (encouraged) follow the login instructions. 
  
 ## 1. Clone the repo
 
@@ -13,6 +13,9 @@ You can use other agents, but this recipe uses Claude Code.
 git clone https://github.com/NCATSTranslator/text-query
 cd text-query
 ```
+
+`If you have your own Claude Code max account, skip to step 6!`
+
 
 ## 2. Copy the environment template
 
