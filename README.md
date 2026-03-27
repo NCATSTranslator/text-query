@@ -43,3 +43,18 @@ claude
 ```
 
 Claude Code will now use Vertex AI with the `translator-microbiome` project.
+Claude Code will read the skills in this cloned project, and have access immediately to some command line skills that we provide, including `translator-query` 
+
+## 6. In your launched Claude Code session from above
+
+```
+source_data % claude                                       
+▗ ▗   ▖ ▖  Claude Code v2.1.85
+           Opus 4.6 (1M context) · Claude Max
+  ▘▘ ▝▝    ~/Documents/source_data
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯  /translator-query How Are Microbiome Communities in the Skin Affected by Changes in ABCC11? 
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ? for shortcuts                            
+
