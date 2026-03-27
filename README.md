@@ -8,7 +8,7 @@
 ## 1. Clone the repo
 
 ```bash
-git clone https://github.com/TranslatorSRI/text-query.git
+git clone https://github.com/NCATSTranslator/text-query
 cd text-query
 ```
 
