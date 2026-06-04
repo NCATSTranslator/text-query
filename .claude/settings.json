@@ -3,5 +3,17 @@
     "allow": [
       "Bash(ls:*)"
     ]
+  },
+  "hooks": {
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run python3 .claude/skills/translator-query/metrics.py finalize"
+          }
+        ]
+      }
+    ]
   }
 }
