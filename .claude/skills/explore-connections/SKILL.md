@@ -27,7 +27,7 @@ Write a Python script and run it via `uv run python3 <script>`:
 ```python
 import matplotlib
 matplotlib.use('Agg')
-from TCT import name_resolver, translator_metakg, TCT
+from translator_component_toolkit import name_resolver, translator_metakg, TCT
 
 # Load resources
 APInames, metaKG, _ = translator_metakg.load_translator_resources()

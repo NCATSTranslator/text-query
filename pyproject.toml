@@ -9,7 +9,7 @@ dependencies = [
     "google-cloud-aiplatform>=1.38.0",
     "python-dotenv>=1.0.0",
     "anthropic>=0.76.0",
-    "tct",
+    "mcp-translator",
 ]
 
 [build-system]
@@ -20,7 +20,7 @@ build-backend = "hatchling.build"
 packages = ["src"]
 
 [tool.uv.sources]
-tct = { git = "https://github.com/NCATSTranslator/Translator_component_toolkit" }
+mcp-translator = { git = "https://github.com/sierra-moxon/Translator_component_toolkit", branch = "main" }
 
 [dependency-groups]
 dev = []

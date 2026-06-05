@@ -12,7 +12,7 @@ Write and execute a Python script via `uv run python3 <script>` that does the fo
 ```python
 import matplotlib
 matplotlib.use('Agg')
-from TCT import name_resolver, node_normalizer
+from translator_component_toolkit import name_resolver, node_normalizer
 
 name = "$ARGUMENTS"
 
