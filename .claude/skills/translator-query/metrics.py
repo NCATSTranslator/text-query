@@ -90,7 +90,7 @@ def _detect_tct_version() -> str:
         from importlib import metadata
     except ImportError:  # pragma: no cover - py<3.8
         return "unknown"
-    for dist in ("tct", "TCT", "translator-component-toolkit"):
+    for dist in ("mcp-translator", "tct", "TCT", "translator-component-toolkit"):
         try:
             return metadata.version(dist)
         except metadata.PackageNotFoundError:
@@ -284,8 +284,37 @@ def cmd_finalize(args: argparse.Namespace) -> int:
         except OSError:
             pass
 
-    print(f"metrics: wrote session row to {CSV_PATH}")
+    table = _format_token_table(row)
+    if hook:
+        # Invoked by the SessionEnd hook: plain stdout is only logged to the debug
+        # file, so surface the table to the user via the `systemMessage` field.
+        print(json.dumps({"systemMessage": f"{table}\nmetrics: wrote session row to {CSV_PATH}"}))
+    else:
+        # Manual invocation: print the table directly.
+        print(table)
+        print(f"metrics: wrote session row to {CSV_PATH}")
     return 0
+
+
+def _format_token_table(row: dict) -> str:
+    """Render the per-session token breakdown as a plain-text table."""
+    rows = [
+        ("input_tokens", row.get("input_tokens", 0)),
+        ("output_tokens", row.get("output_tokens", 0)),
+        ("cache_creation_tokens", row.get("cache_creation_tokens", 0)),
+        ("cache_read_tokens", row.get("cache_read_tokens", 0)),
+        ("total_tokens", row.get("total_tokens", 0)),
+    ]
+    label_w = max(len(name) for name, _ in rows)
+    value_w = max(len(f"{value:,}") for _, value in rows)
+    sep = f"+-{'-' * label_w}-+-{'-' * value_w}-+"
+    lines = ["", "Session token usage:", sep]
+    for name, value in rows:
+        lines.append(f"| {name:<{label_w}} | {value:>{value_w},} |")
+        if name == "cache_read_tokens":  # divider before the total
+            lines.append(sep)
+    lines.append(sep)
+    return "\n".join(lines)
 
 
 def _append_csv_row(row: dict) -> None:

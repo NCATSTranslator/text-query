@@ -37,7 +37,7 @@ Every script MUST start with:
 ```python
 import matplotlib
 matplotlib.use('Agg')
-from TCT import name_resolver, translator_metakg, translator_query, TCT
+from translator_component_toolkit import name_resolver, translator_metakg, translator_query, TCT
 ```
 
 ## Resource Loading
@@ -50,7 +50,7 @@ API_predicates = {api: list(set(metaKG[metaKG['API'] == api]['Predicate'])) for 
 
 ## Name Resolution
 
-Always resolve plain-text names to CURIEs before querying. Use type hints for disambiguation:
+Always resolve plain-text names to CURIEs before querying. **Always pass a `biolink_type` hint and always validate the resolved `.types` before using the CURIE** — a bare `lookup()` returns only the single top hit (`return_top_response=True` by default), which is frequently the wrong entity type. This is the most common cause of empty query results and wasted retry cycles.
 
 ```python
 # Genes — ALWAYS use only_taxa and biolink_type for human genes
@@ -58,19 +58,45 @@ gene = name_resolver.lookup("ABCC11", only_taxa='NCBITaxon:9606', biolink_type='
 # gene.curie = 'NCBIGene:8714', gene.label = 'ABCC11', gene.types = ['biolink:Gene', ...]
 
 # Diseases
-disease = name_resolver.lookup("Crohn's disease")
+disease = name_resolver.lookup("Crohn's disease", biolink_type='biolink:Disease')
 
 # Microbes
 microbe = name_resolver.lookup("Cutibacterium acnes", biolink_type='biolink:OrganismTaxon')
 
-# Drugs
-drug = name_resolver.lookup("imatinib")
+# Drugs — ALWAYS pass a chemical type hint. Brand names (e.g. "Wegovy", "Ozempic")
+# and biologics/peptides resolve to a Protein/UMLS CURIE with a bare lookup, which
+# then returns NO results from a Drug/SmallMolecule neighborhood query.
+drug = name_resolver.lookup("imatinib", biolink_type='biolink:SmallMolecule')
 
 # Batch lookup
 genes = name_resolver.batch_lookup(['NPM1', 'FLT3', 'NRAS'], only_taxa='NCBITaxon:9606')
 ```
 
-If lookup fails, retry without type constraints. If still failing, suggest the user check spelling or try a more specific name.
+### Validate before querying
+
+After resolving, confirm the CURIE has a type compatible with your query target. If a
+drug/chemical resolves to a Protein/Gene type (common for brand names and peptides),
+retry with an alternate type hint or the generic name before running any neighborhood query:
+
+```python
+DRUGLIKE = {'biolink:SmallMolecule', 'biolink:Drug', 'biolink:MolecularEntity', 'biolink:ChemicalEntity'}
+
+def resolve_drug(name):
+    """Resolve a drug name to a chemical CURIE, validating the entity type."""
+    for query, hint in [(name, 'biolink:SmallMolecule'),
+                        (name, 'biolink:Drug'),
+                        (name, 'biolink:ChemicalEntity')]:
+        r = name_resolver.lookup(query, biolink_type=hint)
+        if r and r.curie and DRUGLIKE.intersection(r.types):
+            return r
+    # Last resort: bare lookup (may return a Protein/UMLS CURIE — inspect r.types)
+    return name_resolver.lookup(name)
+
+drug = resolve_drug("Wegovy")   # -> CHEBI:167574 (Semaglutide), not UMLS:.../Protein
+print(f"Resolved: {drug.label} -> {drug.curie}  types={drug.types[:3]}")
+```
+
+If lookup still fails, suggest the user check spelling or try a more specific name (e.g. the generic drug name instead of a brand name).
 
 ## Category Mapping
 
@@ -172,7 +198,7 @@ Use when the user specifically asks about microbiome associations with p-values,
 **Important:** Use `translator_query.query_KP()` (which accepts a dict) — NOT the dead-code `trapi.build_query` / `trapi.query` functions. Build the query dict with `TCT.format_query_json()`.
 
 ```python
-from TCT import translator_query
+from translator_component_toolkit import translator_query
 
 node = name_resolver.lookup("NAFLD")
 predicates = ['biolink:associated_with', 'biolink:correlated_with']
@@ -184,7 +210,7 @@ query_json = TCT.format_query_json(
 
 # Query the Microbiome KP directly
 # First, register it if not already in APInames
-from TCT import translator_metakg
+from translator_component_toolkit import translator_metakg
 translator_metakg.add_new_API_for_query(
     APInames, metaKG, 'Microbiome KP',
     'https://multiomics.transltr.io/mbkp/query',
