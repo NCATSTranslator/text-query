@@ -1960,7 +1960,7 @@ wheels = [
 [[package]]
 name = "mcp-translator"
 version = "0.1.0"
-source = { git = "https://github.com/sierra-moxon/Translator_component_toolkit?branch=main#b42edeaa21216dafa2d28ff723e056518492fc31" }
+source = { git = "https://github.com/sierra-moxon/Translator_component_toolkit?branch=main#3f1281897e6aa109c2ecc83a90fe15d2fac20c8c" }
 dependencies = [
     { name = "click" },
     { name = "fastmcp" },
