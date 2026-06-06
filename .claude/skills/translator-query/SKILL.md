@@ -24,6 +24,14 @@ This skill is instrumented to record token usage and timing for an experiment. D
 
 3. Do nothing else for metrics — total session time and token totals are finalized automatically by a SessionEnd hook.
 
+## Efficiency (controls token cost)
+
+The cached prompt prefix is re-sent on every assistant turn, so **total token use scales with the number of turns**. Keep turns to a minimum:
+
+- **Work silently.** Do not narrate between tool calls ("Now let me…", "Both resolve to…"). Issue the command directly; save prose for the final answer.
+- **Batch independent commands** into one turn (multiple tool calls in a single message) — e.g. resolving two names, or running two `find-neighborhood` queries that don't depend on each other.
+- **Plan the hops up front** so you don't discover a needed query reactively and re-run (see the drug-class note in Strategy 1).
+
 ## How to execute (the `tct` CLI does almost everything)
 
 Every step — resolving names, finding neighbors, finding paths, querying one KP — is a single `uv run tct ...` command that prints JSON to stdout and uses TCT's **cached catalog** (no slow resource load). Run `tct <group> --help` if unsure; the groups are `name`, `normalize`, `metakg`, `query`, `trapi`, `kp`.
@@ -92,6 +100,8 @@ uv run python3 .claude/skills/translator-query/extract_trapi.py /tmp/tq.json 20
 ```
 Results are ranked by number of independent primary knowledge sources. Pass `--input-node-category '["biolink:Disease"]'` only if normalization picks the wrong type.
 
+**Drug-class questions ("related drugs / same class as Y"):** a drug's neighborhood is mostly its ontology *parent* classes, not sibling drugs. Don't re-query reactively when you see this — in the *same batch* as the initial query, also run `find-neighborhood "<parent-class-curie>" '["biolink:Drug","biolink:SmallMolecule"]'` to list class members. If you don't yet know the parent CURIE, expect one extra hop, but issue it deliberately rather than after a surprise.
+
 ### Strategy 2: Path Finding — "How are X and Y connected?"
 
 For how two entities connect through an intermediate type ("How do Crohn's and IBD share microbes?"). Resolve both, then `find-path`:
@@ -101,24 +111,12 @@ uv run python3 .claude/skills/translator-query/extract_trapi.py /tmp/tq.json 20
 ```
 Each row is a bridging node scored by shared support. `--scoring-method edges` scores by edge count instead of distinct infores (default `infores`).
 
-### Strategy 3: Multi-hop (3+ types) and gene networks
+### Strategy 3+ (multi-hop, single-KP queries) and domain knowledge
 
-Chain `find-path` / `find-neighborhood` calls and intersect the node sets, or — if the logic gets complex — drop into Python with `TCT.format_query_json()` + `translator_query.parallel_api_query()` + `TCT.parse_KG()` (load resources once). Prefer chaining CLI calls first.
-
-### Strategy 4: Detailed single-KP query (p-values, publications from one provider)
-
-`find-neighborhood` already returns edges from every relevant KP (including the Microbiome KP) with their publications/p-values — the extractor surfaces them. To target **one** provider, query it directly. The Microbiome KP is in the catalog as `"Microbiome KP - TRAPI 1.5.0"`:
+For multi-hop (3+ types) chaining, targeting one provider directly (e.g. the Microbiome KP), the rare cases that need Python, and Microbiome/gene domain notes, read the on-demand reference only when the task needs it:
 ```
-uv run tct query query-kp '<trapi_json>' "Microbiome KP - TRAPI 1.5.0" > /tmp/tq.json
+.claude/skills/translator-query/REFERENCE.md
 ```
-The TRAPI JSON must use TCT's node/edge key shape (`n00`/`n01`, `e00`); build it with `TCT.format_query_json([curie], [], subject_categories, object_categories, predicates)` in a short Python snippet if hand-writing is error-prone. Microbiome KP endpoint: `https://multiomics.transltr.io/mbkp/query`.
-
-## Domain Knowledge
-
-- **Microbiome KP** connects OrganismTaxon to Gene, Disease, SmallMolecule, etc.; key metapaths are taxon↔disease and taxon↔gene.
-- "Microbiome measurement" is a `biolink:PhenotypicFeature`, not a taxon.
-- Microbiome KP uses specific NCBITaxon IDs (e.g. NCBITaxon:815 for Bacteroides), not general terms like "microbiome".
-- ABCC11 = MRP8 (multidrug resistance-associated protein) — a pleiotropic efflux pump gene.
 
 ## Provenance Transparency Policy
 
