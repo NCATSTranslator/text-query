@@ -86,6 +86,86 @@ def test_summarize_transcript(tmp_path):
     assert s["transcript_span_s"] == pytest.approx(15.0)
 
 
+def test_summarize_dedups_multiline_message(tmp_path):
+    """Claude Code emits several JSONL lines per assistant response, all sharing
+    one message.id and repeating the same usage. summarize_transcript must count
+    each response once (element-wise max), not sum every line."""
+    lines = [
+        # One logical response spread over 3 lines (e.g. thinking + text +
+        # tool_use). Streaming makes output_tokens grow; the rest is constant.
+        {
+            "timestamp": "2026-06-04T23:40:05.000Z",
+            "type": "assistant",
+            "message": {
+                "id": "msg_dup",
+                "model": "claude-opus-4-8",
+                "usage": {
+                    "input_tokens": 3,
+                    "output_tokens": 10,
+                    "cache_creation_input_tokens": 500,
+                    "cache_read_input_tokens": 9000,
+                },
+            },
+        },
+        {
+            "timestamp": "2026-06-04T23:40:06.000Z",
+            "type": "assistant",
+            "message": {
+                "id": "msg_dup",
+                "model": "claude-opus-4-8",
+                "usage": {
+                    "input_tokens": 3,
+                    "output_tokens": 25,
+                    "cache_creation_input_tokens": 500,
+                    "cache_read_input_tokens": 9000,
+                },
+            },
+        },
+        {
+            "timestamp": "2026-06-04T23:40:07.000Z",
+            "type": "assistant",
+            "message": {
+                "id": "msg_dup",
+                "model": "claude-opus-4-8",
+                "usage": {
+                    "input_tokens": 3,
+                    "output_tokens": 40,
+                    "cache_creation_input_tokens": 500,
+                    "cache_read_input_tokens": 9000,
+                },
+            },
+        },
+        # A second, distinct response.
+        {
+            "timestamp": "2026-06-04T23:40:10.000Z",
+            "type": "assistant",
+            "message": {
+                "id": "msg_two",
+                "model": "claude-opus-4-8",
+                "usage": {
+                    "input_tokens": 2,
+                    "output_tokens": 7,
+                    "cache_creation_input_tokens": 0,
+                    "cache_read_input_tokens": 11000,
+                },
+            },
+        },
+    ]
+    t = tmp_path / "session.jsonl"
+    t.write_text("\n".join(json.dumps(line) for line in lines))
+
+    s = metrics.summarize_transcript(t)
+    # Two real responses, not four lines.
+    assert s["num_assistant_turns"] == 2
+    # max(output) of msg_dup is 40, plus 7 from msg_two.
+    assert s["output_tokens"] == 47
+    # input/cache counted once per message id, not once per line.
+    assert s["input_tokens"] == 5
+    assert s["cache_creation_tokens"] == 500
+    assert s["cache_read_tokens"] == 20000
+    assert s["total_tokens"] == 20552
+
+
 def test_find_nonce_in_transcript(tmp_path):
     nonce = "11111111-2222-3333-4444-555555555555"
     t = tmp_path / "session.jsonl"

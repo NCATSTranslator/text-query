@@ -124,17 +124,30 @@ def _parse_iso(ts: str) -> float | None:
         return None
 
 
+USAGE_FIELDS = (
+    ("input_tokens", "input_tokens"),
+    ("output_tokens", "output_tokens"),
+    ("cache_creation_tokens", "cache_creation_input_tokens"),
+    ("cache_read_tokens", "cache_read_input_tokens"),
+)
+
+
 def summarize_transcript(transcript_path: Path) -> dict:
-    """Sum token usage and collect timing/model info from a transcript."""
-    totals = {
-        "input_tokens": 0,
-        "output_tokens": 0,
-        "cache_creation_tokens": 0,
-        "cache_read_tokens": 0,
-    }
-    num_assistant_turns = 0
+    """Sum token usage and collect timing/model info from a transcript.
+
+    Claude Code writes *several* JSONL lines for a single assistant response
+    (one per content block: thinking / text / each tool_use), and every one of
+    those lines repeats the same ``message.id`` and carries a ``usage`` object.
+    Naively summing ``usage`` over all lines therefore counts one API response
+    2-5x. We deduplicate by ``message.id`` and keep the element-wise max of each
+    usage field (the final, cumulative value for that response) before summing.
+    """
+    # message.id -> {our_key: max_value_seen}
+    per_message: dict[str, dict[str, int]] = {}
+    order: list[str] = []  # preserve first-seen order for deterministic model list
     models: list[str] = []
     timestamps: list[float] = []
+    fallback_idx = 0
 
     for obj in _iter_transcript(transcript_path):
         ts = _parse_iso(obj.get("timestamp", ""))
@@ -148,25 +161,36 @@ def summarize_transcript(transcript_path: Path) -> dict:
         if not isinstance(usage, dict):
             continue
 
-        num_assistant_turns += 1
-        totals["input_tokens"] += int(usage.get("input_tokens", 0) or 0)
-        totals["output_tokens"] += int(usage.get("output_tokens", 0) or 0)
-        totals["cache_creation_tokens"] += int(
-            usage.get("cache_creation_input_tokens", 0) or 0
-        )
-        totals["cache_read_tokens"] += int(
-            usage.get("cache_read_input_tokens", 0) or 0
-        )
+        mid = message.get("id")
+        if not mid:
+            # No id (shouldn't happen for assistant msgs); count this line once.
+            mid = f"_noid_{fallback_idx}"
+            fallback_idx += 1
+
+        bucket = per_message.get(mid)
+        if bucket is None:
+            bucket = {our: 0 for our, _ in USAGE_FIELDS}
+            per_message[mid] = bucket
+            order.append(mid)
+
+        for our, raw in USAGE_FIELDS:
+            bucket[our] = max(bucket[our], int(usage.get(raw, 0) or 0))
+
         model = message.get("model")
         if model and model not in models:
             models.append(model)
+
+    totals = {our: 0 for our, _ in USAGE_FIELDS}
+    for mid in order:
+        for our, _ in USAGE_FIELDS:
+            totals[our] += per_message[mid][our]
 
     total_tokens = sum(totals.values())
     span = (max(timestamps) - min(timestamps)) if timestamps else 0.0
     return {
         **totals,
         "total_tokens": total_tokens,
-        "num_assistant_turns": num_assistant_turns,
+        "num_assistant_turns": len(per_message),
         "model": "|".join(models),
         "transcript_span_s": round(span, 3),
     }
